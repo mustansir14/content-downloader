@@ -20,7 +20,9 @@ def _parse_bool(val: Union[str, bool]) -> bool:  # pylint: disable=E1136
 class AppEnv:
     TRW_EMAIL: str
     TRW_PASSWORD: str
-    DROPBOX_ACCESS_TOKEN: str
+    DROPBOX_APP_KEY: str
+    DROPBOX_APP_SECRET: str
+    DROPBOX_REFRESH_TOKEN: str
 
     """
     Map environment variables to class fields according to these rules:

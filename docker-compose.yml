@@ -1,0 +1,11 @@
+services:
+  content-downloader:
+    build: .
+    environment:
+      - TRW_EMAIL=${TRW_EMAIL}
+      - TRW_PASSWORD=${TRW_PASSWORD}
+      - DROPBOX_APP_KEY=${DROPBOX_APP_KEY}
+      - DROPBOX_APP_SECRET=${DROPBOX_APP_SECRET}
+      - DROPBOX_REFRESH_TOKEN=${DROPBOX_REFRESH_TOKEN}
+    volumes:
+      - ./:/app

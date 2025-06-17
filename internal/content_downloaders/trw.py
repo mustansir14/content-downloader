@@ -1,5 +1,6 @@
 import binascii
 import json
+import logging
 import os
 from typing import Generator, Dict
 
@@ -9,6 +10,9 @@ import requests
 
 from internal.content_downloaders.exceptions import AuthenticationError
 from internal.content_downloaders.types import Content
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 REQUEST_HEADERS = {
     'sec-ch-ua-platform': '"Linux"',
@@ -57,6 +61,7 @@ class TRWContentDownloader:
 
     
     def get_content(self) -> Generator[Content, None, None]:
+        clear_download_dir() # Clear the download directory before starting
         for server_name, server_id in SERVERS:
             server_data = self.__fetch_server_data(server_id)
             heirarchy = [("servers", server_name)]
@@ -66,18 +71,26 @@ class TRWContentDownloader:
             for category_id in server_data["categories"]:
                 category = categories_lookup[category_id]
                 heirarchy_category = heirarchy + [("categories", category["title"])]
-                for course_id in category["courses"]:
+                for course_num, course_id in enumerate(category["courses"], start=1):
                     course = courses_lookup[course_id]
-                    heirarchy_course = heirarchy_category + [("courses", course["title"])]
-                    for module_id in course["modules"]:
+                    heirarchy_course = heirarchy_category + [("courses", f'{course_num}. {course["title"]}')]
+                    for module_num, module_id in enumerate(course["modules"], start=1):
                         module = modules_lookup[module_id]
-                        heirarchy_module = heirarchy_course + [("modules", module["title"])]
-                        for lesson_id in module["lessons"]:
+                        heirarchy_module = heirarchy_course + [("modules", f'{module_num}. {module["title"]}')]
+                        for lesson_num, lesson_id in enumerate(module["lessons"], start=1):
                             lesson_data = self.__fetch_lesson_data(lesson_id)
-                            if not lesson_data.get("video"):
+                            download_url = None
+                            if lesson_data.get("video"): 
+                                download_url = lesson_data["video"]["downloadUrl"]
+                            elif lesson_data.get("form") and lesson_data["form"].get("fields"):
+                                for field in lesson_data["form"]["fields"]:
+                                    if field.get("attachment") and field["attachment"].get("properties") and field["attachment"]["properties"].get("downloadUrl"):
+                                        download_url = field["attachment"]["properties"]["downloadUrl"]
+                                        break
+                            if not download_url:
+                                logging.warning(f"No downloadable video found for lesson {lesson_data['title']}")
                                 continue
-                            download_url = lesson_data["video"]["downloadUrl"]
-                            filename = lesson_data["title"] + ".mp4"
+                            filename = f'{lesson_num}. {lesson_data["title"]}.mp4'
                             path = DOWNLOAD_DIR + filename
                             download_video(download_url, path)
                             yield Content(
@@ -154,3 +167,11 @@ def download_video(url: str, output_path: str) -> None:
 def delete_media(path: str) -> None:
     if os.path.exists(path):
         os.remove(path)
+
+
+def clear_download_dir() -> None:
+    if os.path.exists(DOWNLOAD_DIR):
+        for filename in os.listdir(DOWNLOAD_DIR):
+            file_path = os.path.join(DOWNLOAD_DIR, filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
