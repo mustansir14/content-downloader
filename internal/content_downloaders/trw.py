@@ -78,28 +78,32 @@ class TRWContentDownloader:
                         module = modules_lookup[module_id]
                         heirarchy_module = heirarchy_course + [("modules", f'{module_num}. {module["title"]}')]
                         for lesson_num, lesson_id in enumerate(module["lessons"], start=1):
-                            lesson_data = self.__fetch_lesson_data(lesson_id)
-                            download_url = None
-                            if lesson_data.get("video"): 
-                                download_url = lesson_data["video"]["downloadUrl"]
-                            elif lesson_data.get("form") and lesson_data["form"].get("fields"):
-                                for field in lesson_data["form"]["fields"]:
-                                    if field.get("attachment") and field["attachment"].get("properties") and field["attachment"]["properties"].get("downloadUrl"):
-                                        download_url = field["attachment"]["properties"]["downloadUrl"]
-                                        break
-                            if not download_url:
-                                logging.warning(f"No downloadable video found for lesson {lesson_data['title']}")
+                            try:
+                                lesson_data = self.__fetch_lesson_data(lesson_id)
+                                download_url = None
+                                if lesson_data.get("video"): 
+                                    download_url = lesson_data["video"]["downloadUrl"]
+                                elif lesson_data.get("form") and lesson_data["form"].get("fields"):
+                                    for field in lesson_data["form"]["fields"]:
+                                        if field.get("attachment") and field["attachment"].get("properties") and field["attachment"]["properties"].get("downloadUrl"):
+                                            download_url = field["attachment"]["properties"]["downloadUrl"]
+                                            break
+                                if not download_url:
+                                    logging.warning(f"No downloadable video found for lesson {lesson_data['title']}")
+                                    continue
+                                filename = f'{lesson_num}. {lesson_data["title"]}.mp4'
+                                path = DOWNLOAD_DIR + filename
+                                download_video(download_url, path)
+                                yield Content(
+                                    name=filename,
+                                    file_type="video/mp4",
+                                    path=path,
+                                    hierarchy=heirarchy_module
+                                )
+                                delete_media(path)  # Delete after yielding to save space
+                            except Exception as e:
+                                logging.error(f"Error fetching lesson: {str(e)}")
                                 continue
-                            filename = f'{lesson_num}. {lesson_data["title"]}.mp4'
-                            path = DOWNLOAD_DIR + filename
-                            download_video(download_url, path)
-                            yield Content(
-                                name=filename,
-                                file_type="video/mp4",
-                                path=path,
-                                hierarchy=heirarchy_module
-                            )
-                            delete_media(path)  # Delete after yielding to save space
 
 
     
