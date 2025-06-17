@@ -35,7 +35,7 @@ class DropboxClient:
         self.client.files_delete_v2(dropbox_path)
 
 
-class BaseDropboxClientException:
+class BaseDropboxClientException(Exception):
     """Base exception for Dropbox client errors."""
     pass
 
