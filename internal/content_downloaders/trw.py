@@ -63,7 +63,7 @@ class TRWContentDownloader:
     def get_content(self) -> Generator[Content, None, None]:
         clear_download_dir() # Clear the download directory before starting
         for server_name, server_id in SERVERS:
-            server_data = self.__fetch_server_data(server_id)
+            server_data = self.fetch_server_data(server_id)
             heirarchy = [("servers", server_name)]
             categories_lookup = server_data["categories_lookup"]
             courses_lookup = server_data["courses_lookup"]
@@ -74,45 +74,61 @@ class TRWContentDownloader:
                 for course_num, course_id in enumerate(category["courses"], start=1):
                     course = courses_lookup[course_id]
                     heirarchy_course = heirarchy_category + [("courses", f'{course_num}. {course["title"]}')]
+                    if course["embed_link"]:
+                        file_path = DOWNLOAD_DIR + f'{course["title"]}.html'
+                        download_embed_link(course["embed_link"], file_path)
+                        yield Content(
+                            file_type="text/html",
+                            name=f'{course["title"]}.html',
+                            path=file_path,
+                            hierarchy=heirarchy_course
+                        )
+                        delete_media(file_path)
                     for module_num, module_id in enumerate(course["modules"], start=1):
                         module = modules_lookup[module_id]
                         heirarchy_module = heirarchy_course + [("modules", f'{module_num}. {module["title"]}')]
                         for lesson_num, lesson_id in enumerate(module["lessons"], start=1):
                             try:
-                                lesson_data = self.__fetch_lesson_data(lesson_id)
-                                download_url = None
-                                if lesson_data.get("video"): 
-                                    download_url = lesson_data["video"]["downloadUrl"]
-                                elif lesson_data.get("form") and lesson_data["form"].get("fields"):
-                                    for field in lesson_data["form"]["fields"]:
-                                        if field.get("attachment") and field["attachment"].get("properties") and field["attachment"]["properties"].get("downloadUrl"):
-                                            download_url = field["attachment"]["properties"]["downloadUrl"]
-                                            break
-                                if not download_url:
-                                    logging.warning(f"No downloadable video found for lesson {lesson_data['title']}")
-                                    continue
-                                filename = f'{lesson_num}. {lesson_data["title"]}.mp4'
-                                path = DOWNLOAD_DIR + filename
-                                download_video(download_url, path)
+                                lesson_data = self.fetch_lesson_data(lesson_id)
+                                heirarchy_lesson = heirarchy_module + [("lessons", f'{lesson_num}. {lesson_data["title"]}')] 
+                                for field in lesson_data["form"]["fields"]:
+                                    if field.get("attachment") and field["attachment"].get("properties") and field["attachment"]["properties"].get("downloadUrl"):
+                                        download_url = field["attachment"]["properties"]["downloadUrl"]
+                                        title = field["title"]
+                                        if not title:
+                                            title = lesson_data["title"]
+                                        filename = f'{lesson_num}. {title}.mp4'
+                                        path = DOWNLOAD_DIR + filename
+                                        download_video(download_url, path)
+                                        yield Content(
+                                            name=filename,
+                                            file_type="video/mp4",
+                                            path=path,
+                                            hierarchy=heirarchy_lesson
+                                        )
+                                        delete_media(path)  # Delete after yielding to save space
+                                        field["attachment"] = {"type": "video", "file": filename}
+                                with open(DOWNLOAD_DIR + "lesson_data.json", "w") as f:
+                                    json.dump(lesson_data, f, indent=4)
                                 yield Content(
-                                    name=filename,
-                                    file_type="video/mp4",
-                                    path=path,
-                                    hierarchy=heirarchy_module
+                                    name="lesson_data.json",
+                                    file_type="application/json",
+                                    path=DOWNLOAD_DIR + "lesson_data.json",
+                                    hierarchy=heirarchy_lesson
                                 )
-                                delete_media(path)  # Delete after yielding to save space
+                                delete_media(DOWNLOAD_DIR + "lesson_data.json")  # Delete after yielding to save space
                             except Exception as e:
                                 logging.error(f"Error fetching lesson: {str(e)}")
                                 continue
 
 
     
-    def __fetch_server_data(self, server_id: str) -> Dict[str, any]:
+    def fetch_server_data(self, server_id: str) -> Dict[str, any]:
         url = f"https://rpc.therealworld.ag/api/trpc/school.fetchServerDataCached?input=%7B%22serverId%22%3A%22{server_id}%22%7D"
         response = self.__request("GET", url, auth=True)
         return response.json()["result"]["data"]
     
-    def __fetch_lesson_data(self, lesson_id: str) -> Dict[str, any]:
+    def fetch_lesson_data(self, lesson_id: str) -> Dict[str, any]:
         url = f"https://rpc.therealworld.ag/api/trpc/school.retrieveLessonSecure?input=%7B%22lessonId%22%3A%22{lesson_id}%22%7D"
         response = self.__request("GET", url, auth=True)
         encrypted_value = response.json()["result"]["data"]["value"]
@@ -179,3 +195,14 @@ def clear_download_dir() -> None:
             file_path = os.path.join(DOWNLOAD_DIR, filename)
             if os.path.isfile(file_path):
                 os.remove(file_path)
+
+
+
+def download_embed_link(embed_link: str, output_path: str) -> None:
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    res = requests.get(embed_link, headers=REQUEST_HEADERS)
+    if res.status_code != 200:
+        raise Exception(f"Failed to download embed link: {res.status_code} - {res.text}")
+    # save as html
+    with open(output_path, 'wb') as f:
+        f.write(res.content)
