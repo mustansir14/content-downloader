@@ -1,7 +1,11 @@
 import dropbox
 import dropbox.files
 import requests
+import os
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+MAX_FILE_SIZE = 150 * 1024 * 1024  # 150 MB
 
 class DropboxClient:
 
@@ -10,11 +14,26 @@ class DropboxClient:
 
 
     def upload_file(self, local_path: str, dropbox_path: str) -> None:
+        file_size = os.path.getsize(local_path)
         retry_count = 0
         while True:
             try:
-                with open(local_path, 'rb') as f:
-                    self.client.files_upload(f.read(), dropbox_path, mode=dropbox.files.WriteMode.overwrite)
+                # if file size is greater than 150 MB, use upload session
+                if file_size > MAX_FILE_SIZE:
+                    with open(local_path, 'rb') as f:
+                        upload_session_start_result = self.client.files_upload_session_start(f.read(MAX_FILE_SIZE))
+                        session_id = upload_session_start_result.session_id
+                        cursor = dropbox.files.UploadSessionCursor(session_id=session_id, offset=f.tell())
+                        commit = dropbox.files.CommitInfo(path=dropbox_path, mode=dropbox.files.WriteMode.overwrite)
+                        while f.tell() < file_size:
+                            if file_size - f.tell() > MAX_FILE_SIZE:
+                                self.client.files_upload_session_append_v2(f.read(MAX_FILE_SIZE), cursor)
+                                cursor.offset = f.tell()
+                            else:
+                                self.client.files_upload_session_finish(f.read(file_size - f.tell()), cursor, commit)
+                else:
+                    with open(local_path, 'rb') as f:
+                        self.client.files_upload(f.read(), dropbox_path, mode=dropbox.files.WriteMode.overwrite)
                 break
             except requests.exceptions.ConnectionError:
                 retry_count += 1
