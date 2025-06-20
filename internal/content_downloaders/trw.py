@@ -78,7 +78,7 @@ class TRWContentDownloader:
                         file_path = DOWNLOAD_DIR + f'{course["title"]}.html'
                         download_embed_link(course["embed_link"], file_path)
                         yield Content(
-                            file_type="text/html",
+                            file_type="html",
                             name=f'{course["title"]}.html',
                             path=file_path,
                             hierarchy=heirarchy_course
@@ -102,7 +102,7 @@ class TRWContentDownloader:
                                         download_video(download_url, path)
                                         yield Content(
                                             name=filename,
-                                            file_type="video/mp4",
+                                            file_type="video",
                                             path=path,
                                             hierarchy=heirarchy_lesson
                                         )
@@ -112,7 +112,7 @@ class TRWContentDownloader:
                                     json.dump(lesson_data, f, indent=4)
                                 yield Content(
                                     name="lesson_data.json",
-                                    file_type="application/json",
+                                    file_type="json",
                                     path=DOWNLOAD_DIR + "lesson_data.json",
                                     hierarchy=heirarchy_lesson
                                 )
