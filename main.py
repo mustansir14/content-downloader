@@ -34,7 +34,7 @@ while True:
             logging.error("Failed to upload content to Dropbox - %s", content.name)
             continue
         logging.info("Uploaded content to Dropbox - %s", dropbox_path)
-        file_logger.info(f'{content.file_type.capitalize()} added "{content.name}"\n{os.path.dirname(content.path).replace("/", ">")} GREEN\n')
+        file_logger.info(f'{content.file_type.capitalize()} added "{content.name}"\n{os.path.dirname(dropbox_path).replace(DROPBOX_BASE_TRW_PATH, "").replace("/", ">")} GREEN\n')
     
     # delete files that are not in new_files
     for file in existing_files:
