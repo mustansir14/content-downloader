@@ -10,6 +10,7 @@ import requests
 
 from internal.content_downloaders.exceptions import AuthenticationError
 from internal.content_downloaders.types import Content
+from internal.utils import sanitize
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -26,8 +27,6 @@ REQUEST_HEADERS = {
 }
 
 SERVERS = [
-    ("Business Mastery", "01GVZRG9K25SS9JZBAMA4GRCEF"),
-    ("Social Media", "01GGDHHJJW5MQZBE0NPERYE8E7"),
     ("AI Automation", "01HZFA8C65G7QS2DQ5XZ2RNBFP"),
     ("Hustler's Campus", "01HSRZK1WHNV787DBPYQYN44ZS"),
     ("Ecommerce", "01GGDHHAR4MJXXKW3MMN85FY8C"),
@@ -38,6 +37,8 @@ SERVERS = [
     ("Headquarters", "01GGDHJAQMA1D0VMK8WV22BJJN"),
     ("Crypto Investing", "01GGDHGV32QWPG7FJ3N39K4FME"),
     ("Health & Fitness", "01GVZRNVT519Q67C8BQGJHRDBY"),
+    ("Business Mastery", "01GVZRG9K25SS9JZBAMA4GRCEF"),
+    ("Social Media", "01GGDHHJJW5MQZBE0NPERYE8E7"),
 ]
 
 DOWNLOAD_DIR = "downloads/trw/"
@@ -97,6 +98,7 @@ class TRWContentDownloader:
                                         title = field["title"]
                                         if not title:
                                             title = lesson_data["title"]
+                                        title = sanitize(title)  # Sanitize title for filename
                                         filename = f'{lesson_num}. {title}.mp4'
                                         path = DOWNLOAD_DIR + filename
                                         download_video(download_url, path)
