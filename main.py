@@ -3,7 +3,6 @@ import os
 
 from internal.content_downloaders.trw import TRWContentDownloader
 from internal.dropbox import DropboxClient, DropboxClientUploadError
-from internal.utils import sanitize
 from internal.env import Env
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -28,7 +27,6 @@ while True:
         for _, value in content.hierarchy:
             dropbox_path += f"{value.strip()}/"
         dropbox_path += content.name
-        dropbox_path = sanitize(dropbox_path)
         new_files.append(dropbox_path)
         try:
             dropbox_client.upload_file(content.path, dropbox_path)

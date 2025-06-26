@@ -73,19 +73,19 @@ class TRWContentDownloader:
             for category_id in server_data["categories"]:
                 category = categories_lookup[category_id]
                 heirarchy_category = heirarchy + \
-                    [("categories", category["title"])]
+                    [("categories", sanitize(category["title"]))]
                 for course_num, course_id in enumerate(category["courses"], start=1):
                     course = courses_lookup[course_id]
                     heirarchy_course = heirarchy_category + \
-                        [("courses", f'{course_num}. {course["title"]}')]
+                        [("courses", f'{course_num}. {sanitize(course["title"])}')]
                     if course["embed_link"]:
-                        file_path = DOWNLOAD_DIR + f'{course["title"]}.html'
+                        file_path = DOWNLOAD_DIR + f'{sanitize(course["title"])}.html'
                         try:
                             download_embed_link(
                                 course["embed_link"], file_path)
                             yield Content(
                                 file_type="html",
-                                name=f'{course["title"]}.html',
+                                name=f'{sanitize(course["title"])}.html',
                                 path=file_path,
                                 hierarchy=heirarchy_course
                             )
@@ -97,13 +97,13 @@ class TRWContentDownloader:
                     for module_num, module_id in enumerate(course["modules"], start=1):
                         module = modules_lookup[module_id]
                         heirarchy_module = heirarchy_course + \
-                            [("modules", f'{module_num}. {module["title"]}')]
+                            [("modules", f'{module_num}. {sanitize(module["title"])}')]
                         for lesson_num, lesson_id in enumerate(module["lessons"], start=1):
                             try:
                                 lesson_data = self.fetch_lesson_data(lesson_id)
                                 heirarchy_lesson = heirarchy_module + \
                                     [("lessons",
-                                      f'{lesson_num}. {lesson_data["title"]}')]
+                                      f'{lesson_num}. {sanitize(lesson_data["title"])}')]
                                 for field in lesson_data["form"]["fields"]:
                                     if field.get("attachment") and field["attachment"].get("properties") and field["attachment"]["properties"].get("downloadUrl"):
                                         download_url = field["attachment"]["properties"]["downloadUrl"]
