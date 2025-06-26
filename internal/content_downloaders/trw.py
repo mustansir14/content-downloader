@@ -28,7 +28,6 @@ REQUEST_HEADERS = {
 }
 
 SERVERS = [
-    ("Crypto DeFi", "01GW4K766W7A5N6PWV2YCX0GZP"),
     ("Crypto Trading", "01GW4K82142Y9A465QDA3C7P44"),
     ("Copywriting", "01GGDHGYWCHJD6DSZWGGERE3KZ"),
     ("Content Creation", "01GXNJTRFK41EHBK63W4M5H74M"),
@@ -40,6 +39,7 @@ SERVERS = [
     ("AI Automation", "01HZFA8C65G7QS2DQ5XZ2RNBFP"),
     ("Hustler's Campus", "01HSRZK1WHNV787DBPYQYN44ZS"),
     ("Ecommerce", "01GGDHHAR4MJXXKW3MMN85FY8C"),
+    ("Crypto DeFi", "01GW4K766W7A5N6PWV2YCX0GZP"),
 ]
 
 DOWNLOAD_DIR = "downloads/trw/"
