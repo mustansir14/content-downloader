@@ -28,18 +28,18 @@ REQUEST_HEADERS = {
 }
 
 SERVERS = [
-    ("Crypto Trading", "01GW4K82142Y9A465QDA3C7P44"),
-    ("Copywriting", "01GGDHGYWCHJD6DSZWGGERE3KZ"),
-    ("Content Creation", "01GXNJTRFK41EHBK63W4M5H74M"),
-    ("Headquarters", "01GGDHJAQMA1D0VMK8WV22BJJN"),
-    ("Crypto Investing", "01GGDHGV32QWPG7FJ3N39K4FME"),
-    ("Health & Fitness", "01GVZRNVT519Q67C8BQGJHRDBY"),
     ("Business Mastery", "01GVZRG9K25SS9JZBAMA4GRCEF"),
     ("Social Media", "01GGDHHJJW5MQZBE0NPERYE8E7"),
     ("AI Automation", "01HZFA8C65G7QS2DQ5XZ2RNBFP"),
     ("Hustler's Campus", "01HSRZK1WHNV787DBPYQYN44ZS"),
     ("Ecommerce", "01GGDHHAR4MJXXKW3MMN85FY8C"),
     ("Crypto DeFi", "01GW4K766W7A5N6PWV2YCX0GZP"),
+    ("Crypto Trading", "01GW4K82142Y9A465QDA3C7P44"),
+    ("Copywriting", "01GGDHGYWCHJD6DSZWGGERE3KZ"),
+    ("Content Creation", "01GXNJTRFK41EHBK63W4M5H74M"),
+    ("Headquarters", "01GGDHJAQMA1D0VMK8WV22BJJN"),
+    ("Crypto Investing", "01GGDHGV32QWPG7FJ3N39K4FME"),
+    ("Health & Fitness", "01GVZRNVT519Q67C8BQGJHRDBY"),
 ]
 
 DOWNLOAD_DIR = "downloads/trw/"
@@ -70,10 +70,10 @@ class TRWContentDownloader:
             categories_lookup = server_data["categories_lookup"]
             courses_lookup = server_data["courses_lookup"]
             modules_lookup = server_data["modules_lookup"]
-            for category_id in server_data["categories"]:
+            for category_num, category_id in enumerate(server_data["categories"], start=1):
                 category = categories_lookup[category_id]
                 heirarchy_category = heirarchy + \
-                    [("categories", sanitize(category["title"]))]
+                    [("categories", f'{category_num}. {sanitize(category["title"])}')]
                 for course_num, course_id in enumerate(category["courses"], start=1):
                     course = courses_lookup[course_id]
                     heirarchy_course = heirarchy_category + \
