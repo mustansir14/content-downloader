@@ -74,7 +74,7 @@ class MasterClassContentDownloader(ContentDownloader):
                         raise RequestFailedError(
                             f"No M3U8 URL found for chapter {chapter['title']} in course {course_details['title']}"
                         )
-                    output_path = DOWNLOAD_DIR + f"{chapter["slug"]}.mp4"
+                    output_path = DOWNLOAD_DIR + f"{chapter['slug']}.mp4"
                     download_m3u8_with_ytdlp(m3u8_url, output_path)
                     yield Content(
                         name= f"{chapter_num}. {chapter['slug']}.mp4",
