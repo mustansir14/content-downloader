@@ -8,6 +8,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 import requests
 
+from internal.content_downloaders.base import ContentDownloader
 from internal.content_downloaders.exceptions import AuthenticationError
 from internal.content_downloaders.types import Content
 from internal.utils import sanitize
@@ -45,7 +46,7 @@ SERVERS = [
 DOWNLOAD_DIR = "downloads/trw/"
 
 
-class TRWContentDownloader:
+class TRWContentDownloader(ContentDownloader):
 
     def __init__(self, email: str, password: str):
         url = "https://eden.therealworld.ag/auth/password/login"
@@ -89,7 +90,6 @@ class TRWContentDownloader:
                                 path=file_path,
                                 hierarchy=heirarchy_course
                             )
-                            delete_media(file_path)
                         except Exception as e:
                             logging.error(
                                 f"Error downloading embed link for course {course['title']}: {str(e)}")
@@ -121,8 +121,6 @@ class TRWContentDownloader:
                                             path=path,
                                             hierarchy=heirarchy_lesson
                                         )
-                                        # Delete after yielding to save space
-                                        delete_media(path)
                                         field["attachment"] = {
                                             "type": "video", "file": filename}
                                 with open(DOWNLOAD_DIR + "lesson_data.json", "w") as f:
@@ -133,8 +131,6 @@ class TRWContentDownloader:
                                     path=DOWNLOAD_DIR + "lesson_data.json",
                                     hierarchy=heirarchy_lesson
                                 )
-                                # Delete after yielding to save space
-                                delete_media(DOWNLOAD_DIR + "lesson_data.json")
                             except Exception as e:
                                 logging.error(
                                     f"Error fetching lesson: {str(e)}")
@@ -199,11 +195,6 @@ def download_video(url: str, output_path: str) -> None:
         with open(output_path, 'wb') as f:
             for chunk in r.iter_content(chunk_size=8192):
                 f.write(chunk)
-
-
-def delete_media(path: str) -> None:
-    if os.path.exists(path):
-        os.remove(path)
 
 
 def clear_download_dir() -> None:

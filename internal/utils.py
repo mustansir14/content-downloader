@@ -1,4 +1,5 @@
 import re
+import os
 
 def sanitize(s: str) -> str:
     return remove_emojis(s.replace("/", "-").replace("\\", "-").replace(",", "-"))
@@ -20,3 +21,8 @@ def remove_emojis(text):
         flags=re.UNICODE
     )
     return emoji_pattern.sub(r'', text)
+
+
+def delete_media(path: str) -> None:
+    if os.path.exists(path):
+        os.remove(path)

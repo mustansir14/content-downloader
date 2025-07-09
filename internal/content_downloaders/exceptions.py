@@ -5,3 +5,7 @@ class BaseContentDownloaderException(Exception):
 class AuthenticationError(BaseContentDownloaderException):
     """Raised when authentication fails."""
     pass
+
+class RequestFailedError(BaseContentDownloaderException):
+    """Raised when a request fails"""
+    pass
