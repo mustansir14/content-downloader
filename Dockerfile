@@ -4,6 +4,9 @@ FROM python:3.10-alpine
 # Set the working directory in the container
 WORKDIR /app
 
+# Install ffmpeg and other dependencies
+RUN apk add --no-cache ffmpeg
+
 COPY ./requirements.txt /app/requirements.txt
 
 # Install any required dependencies
