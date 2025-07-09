@@ -1,3 +1,5 @@
+beautifulsoup4==4.13.4
+bs4==0.0.2
 certifi==2025.6.15
 cffi==1.17.1
 charset-normalizer==3.4.2
@@ -9,5 +11,8 @@ pycparser==2.22
 python-dotenv==1.1.0
 requests==2.32.4
 six==1.17.0
+soupsieve==2.7
 stone==3.3.1
+typing_extensions==4.14.0
 urllib3==2.4.0
+yt-dlp==2025.6.30
