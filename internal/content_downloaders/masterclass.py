@@ -6,6 +6,7 @@
 # 3. Get media uuid for each chapter and fetch media metadata
 # 4. Get m3u8 url for each chapter and download via yt-dlp
 import json
+import logging
 import os
 from typing import Dict
 
@@ -15,6 +16,9 @@ import yt_dlp
 from internal.content_downloaders.base import ContentDownloader
 from internal.content_downloaders.exceptions import RequestFailedError
 from internal.content_downloaders.types import Content
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 REQUEST_HEADERS = {
   'accept': 'application/json',
@@ -51,7 +55,11 @@ class MasterClassContentDownloader(ContentDownloader):
             result = response.json()["results"][0]
             total_pages = result["nbPages"]
             for course in result["hits"]:
-                course_details = self.fetch_course_data(course["slug"])
+                try:
+                    course_details = self.fetch_course_data(course["slug"])
+                except RequestFailedError as e:
+                    logging.error(f"Failed to fetch course data for {course['slug']}: {e}")
+                    continue
                 filename = course_details["slug"] + ".json"
                 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
                 metadata_file_path = DOWNLOAD_DIR + filename
