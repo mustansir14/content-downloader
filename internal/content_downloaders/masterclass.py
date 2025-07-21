@@ -134,6 +134,7 @@ def download_m3u8_with_ytdlp(m3u8_url: str, output_path: str):
         'outtmpl': output_path,
         'format': 'bestvideo+bestaudio',  # video + audio
         'merge_output_format': 'mp4',
+        'quiet': True,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
