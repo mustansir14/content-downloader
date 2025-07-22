@@ -52,6 +52,24 @@ class DropboxClient:
     
     def delete_file(self, dropbox_path: str) -> None:
         self.client.files_delete_v2(dropbox_path)
+        # check if folder containing the file is empty now, in which case delete folder recursively
+        folder_path = os.path.dirname(dropbox_path)
+        if folder_path != '/':
+            self.__delete_empty_folder_recursively(folder_path)
+        
+    
+    def __delete_empty_folder_recursively(self, folder_path: str) -> None:
+        try:
+            response = self.client.files_list_folder(folder_path)
+            if not response.entries:
+                self.client.files_delete_v2(folder_path)
+                logging.info(f"Deleted empty folder: {folder_path}")
+                one_level_up = os.path.dirname(folder_path)
+                if one_level_up != '/':
+                    self.__delete_empty_folder_recursively(one_level_up)
+        except dropbox.exceptions.ApiError as e:
+            logging.error(f"Failed to delete folder {folder_path}: {e}")
+
 
 
 class BaseDropboxClientException(Exception):
