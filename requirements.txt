@@ -3,13 +3,16 @@ bs4==0.0.2
 certifi==2025.6.15
 cffi==1.17.1
 charset-normalizer==3.4.2
+cloudscraper==1.2.71
 cryptography==45.0.4
 dropbox==12.0.2
 idna==3.10
 ply==3.11
 pycparser==2.22
+pyparsing==3.2.3
 python-dotenv==1.1.0
 requests==2.32.4
+requests-toolbelt==1.0.0
 six==1.17.0
 soupsieve==2.7
 stone==3.3.1
