@@ -24,6 +24,8 @@ class AppEnv:
     DROPBOX_APP_SECRET: str
     DROPBOX_REFRESH_TOKEN: str
     LOG_FILE: str = "logs.txt"
+    JIUJITSU_EMAIL: str
+    JIUJITSU_PASSWORD: str
 
     """
     Map environment variables to class fields according to these rules:

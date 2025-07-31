@@ -1,6 +1,7 @@
 import logging
 import os
 
+from internal.content_downloaders.jiujitsu import JiuJitsuContentDownloader
 from internal.content_downloaders.trw import TRWContentDownloader
 from internal.content_downloaders.masterclass import MasterClassContentDownloader
 from internal.dropbox import DropboxClient, DropboxClientUploadError
@@ -18,7 +19,8 @@ file_logger.addHandler(file_handler)
 dropbox_client = DropboxClient(Env.DROPBOX_APP_KEY, Env.DROPBOX_APP_SECRET, Env.DROPBOX_REFRESH_TOKEN)
 
 downloaders = [
-    ("/masterclass/", MasterClassContentDownloader()),
+    # ("/masterclass/", MasterClassContentDownloader()),
+    ("/jiujitsu/", JiuJitsuContentDownloader(Env.JIUJITSU_EMAIL, Env.JIUJITSU_PASSWORD)),
     ("/trw/", TRWContentDownloader(Env.TRW_EMAIL, Env.TRW_PASSWORD)),
 ]
 
