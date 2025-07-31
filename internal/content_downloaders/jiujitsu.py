@@ -58,10 +58,10 @@ class JiuJitsuContentDownloader(ContentDownloader):
                     raise RequestFailedError(f"Failed to load product page: {product_page_href}")
                 products_page_soup = BeautifulSoup(product_page_res.text, 'html.parser')
                 categories = products_page_soup.find_all("a", class_="card")
-                for category in categories:
+                for category_num, category in enumerate(categories, start=1):
                     category_image_src = category.img["src"]
                     category_name = sanitize(category.h4.text.strip())
-                    heirarchy_category = heirarchy + [("categories", category_name)]
+                    heirarchy_category = heirarchy + [("categories", f"{category_num}. {category_name}")]
                     category_download_path = f"{DOWNLOAD_DIR}/{category_name}.png"
                     download_media(category_image_src, category_download_path)
                     yield Content(
@@ -75,6 +75,7 @@ class JiuJitsuContentDownloader(ContentDownloader):
                     if category_page_res.status_code != 200:
                         raise RequestFailedError(f"Failed to load category page: {category_page_href}")
                     videos_page = 1
+                    video_num = 1
                     while True:
                         category_page_soup = BeautifulSoup(category_page_res.text, 'html.parser')
                         videos = category_page_soup.find_all("a", class_="post-listing")
@@ -85,7 +86,7 @@ class JiuJitsuContentDownloader(ContentDownloader):
                             video_image_src = video.img["src"]
                             video_image_download_path = f"{DOWNLOAD_DIR}/{video_name}.png"
                             download_media(video_image_src, video_image_download_path)
-                            heirarchy_video = heirarchy_category + [("videos", video_name)]
+                            heirarchy_video = heirarchy_category + [("videos", f"{video_num}. {video_name}")]
                             yield Content(
                                 name=f"{video_name}.png",
                                 file_type="image",
@@ -106,6 +107,7 @@ class JiuJitsuContentDownloader(ContentDownloader):
                                 path=video_download_path,
                                 hierarchy=heirarchy_video
                             )
+                            video_num += 1
                         videos_page += 1
                         category_page_res = self.scraper.get(f"{category_page_href}?page={videos_page}")
                         if category_page_res.status_code != 200:
