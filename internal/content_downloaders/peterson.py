@@ -1,13 +1,17 @@
 import json
 import logging
 import os
+import re
 import requests
 from typing import Dict
 from bs4 import BeautifulSoup
+import yt_dlp
+
 
 from internal.content_downloaders.base import ContentDownloader
 from internal.content_downloaders.exceptions import RequestFailedError, AuthenticationError
 from internal.content_downloaders.types import Content
+from internal.utils import sanitize
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -120,7 +124,6 @@ class PetersonContentDownloader(ContentDownloader):
         Retrieves the list of courses from Peterson Academy and fetches their metadata.
         """
         courses_url = "https://petersonacademy.com/courses"
-        logging.info(f"Fetching courses from: {courses_url}")
 
         try:
             # Use the session to make the authenticated request
@@ -133,12 +136,11 @@ class PetersonContentDownloader(ContentDownloader):
             course_links = soup.find_all('a', class_='course-card')
 
             if not course_links:
-                logging.warning("No course links found on the page.")
                 return
 
             # Create download directory
-            os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-            
+            os.makedirs(DOWNLOAD_DIR, exist_ok=True)            
+                        
             logging.info(f"Found {len(course_links)} courses")
             
             for link in course_links:
@@ -152,18 +154,13 @@ class PetersonContentDownloader(ContentDownloader):
                         # Fetch course metadata
                         course_data = self._fetch_course_data(course_slug)
                         
-                        # Get course name from API response
-                        course_name = course_data.get('title', course_slug)
-                        
                         # Save metadata to file
                         filename = f"{course_slug}.json"
                         metadata_file_path = os.path.join(DOWNLOAD_DIR, filename)
                         
                         with open(metadata_file_path, "w") as f:
                             json.dump(course_data, f, indent=4)
-                        
-                        logging.info(f"Saved metadata for course: {course_name}")
-                        
+                                                                        
                         # Yield metadata as Content
                         yield Content(
                             name=filename,
@@ -171,6 +168,49 @@ class PetersonContentDownloader(ContentDownloader):
                             path=metadata_file_path,
                             hierarchy=[("course", course_slug)]
                         )
+
+                        image_url = f"https://ik.imagekit.io/0qkyxdfkk/prod/courses%2F{course_data['id']}%2Fthumb?tr=h-640&alt=media"
+                        image_path = os.path.join(DOWNLOAD_DIR, f"{course_slug}.png")
+
+                        # Download course image
+                        download_media(image_url, image_path)
+
+                        yield Content(
+                            name=f"{course_slug}.png",
+                            file_type="image",
+                            path=image_path,
+                            hierarchy=[("course", course_slug)]
+                        )
+
+                        for lesson_num, lesson in enumerate(course_data.get('lessons', []), start=1):
+                            lesson_url = "https://petersonacademy.com" + lesson['path']
+
+                            response = self.session.get(lesson_url, headers=BASE_HEADERS)
+                            response.raise_for_status()
+
+                            with open("test.html", "w") as f:
+                                f.write(response.text)
+                            
+                            playback_id = extract_playback_id(response.text)
+                            if not playback_id:
+                                logging.warning(f"No playback ID found for lesson {lesson['title']} in course {course_slug}")
+                                continue
+
+                            token = extract_token(response.text)
+
+                            m3u8_url = f"https://stream.mux.com/{playback_id}.m3u8?token={token}&CMCD=cid%3D%22{playback_id}%22%2Csid%3D%222a98f3ba-f411-477c-bf37-cd397fde50eb%22"
+
+                            lesson_name = f"{lesson_num}. {sanitize(lesson['title'])}"
+                            output_path = os.path.join(DOWNLOAD_DIR, f"{sanitize(lesson['path'])}.mp4")
+
+                            download_m3u8_with_ytdlp(m3u8_url, output_path)
+
+                            yield Content(
+                                name=f"{lesson_name}.mp4",
+                                file_type="video",
+                                path=output_path,
+                                hierarchy=[("course", course_slug)]
+                            )
                         
                     except RequestFailedError as e:
                         logging.error(f"Failed to fetch course data for {course_slug}: {e}")
@@ -199,3 +239,55 @@ class PetersonContentDownloader(ContentDownloader):
             raise RequestFailedError(f"Failed to fetch course data for {course_slug}: {e}")
         except json.JSONDecodeError as e:
             raise RequestFailedError(f"Failed to parse course data for {course_slug}: {e}") 
+        
+
+def download_media(url: str, output_path: str) -> None:
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        with open(output_path, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+
+def extract_playback_id(text):
+    # Define the regex pattern to match the playback ID
+    pattern = r'playbackId:\s*"([A-Za-z0-9]+)"'
+    
+    # Search for the pattern in the given text
+    match = re.search(pattern, text)
+    
+    # Return the playback ID if found, otherwise None
+    return match.group(1) if match else None
+
+def extract_token(text):
+    # Define the regex pattern to match the playback ID
+    pattern = r'playbackData:\{[^}]*token:"([^"]+)"'
+    
+    # Search for the pattern in the given text
+    match = re.search(pattern, text)
+    
+    # Return the playback ID if found, otherwise None
+    return match.group(1) if match else None
+
+
+def download_m3u8_with_ytdlp(m3u8_url: str, output_path: str):
+    """
+    Downloads an M3U8 video using yt-dlp.
+
+    Args:
+        m3u8_url (str): URL of the .m3u8 stream.
+        output_path (str): Desired output file path (e.g., "video.mp4").
+    """
+    ydl_opts = {
+        'outtmpl': output_path,
+        'quiet': True,
+        'no_warnings': True,
+        'progress_hooks': [],
+        'logger': None,
+        'noprogress': True,
+
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([m3u8_url])

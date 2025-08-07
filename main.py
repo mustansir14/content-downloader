@@ -4,6 +4,7 @@ import os
 from internal.content_downloaders.jiujitsu import JiuJitsuContentDownloader
 from internal.content_downloaders.trw import TRWContentDownloader
 from internal.content_downloaders.masterclass import MasterClassContentDownloader
+from internal.content_downloaders.peterson import PetersonContentDownloader
 from internal.dropbox import DropboxClient, DropboxClientUploadError
 from internal.env import Env
 from internal.utils import delete_media
@@ -20,6 +21,7 @@ dropbox_client = DropboxClient(Env.DROPBOX_APP_KEY, Env.DROPBOX_APP_SECRET, Env.
 
 downloaders = [
     # ("/masterclass/", MasterClassContentDownloader()),
+    ("/peterson/", PetersonContentDownloader(Env.PETERSON_EMAIL, Env.PETERSON_PASSWORD)),
     ("/jiujitsu/", JiuJitsuContentDownloader(Env.JIUJITSU_EMAIL, Env.JIUJITSU_PASSWORD)),
     ("/trw/", TRWContentDownloader(Env.TRW_EMAIL, Env.TRW_PASSWORD)),
 ]
@@ -48,13 +50,14 @@ while True:
             file_logger.info(f'{content.file_type.capitalize()} added "{content.name}"\n{os.path.dirname(dropbox_path).replace(dropbox_base_path, "").replace("/", ">")} GREEN\n')
         
         # delete files that are not in new_files
-        for file in existing_files:
-            if file not in new_files:
-                content_type = "video"
-                if file.endswith(".html"):
-                    content_type = "html"
-                elif file.endswith(".json"):
-                    content_type = "json"
-                logging.info("Deleting file from Dropbox - %s", file)
-                dropbox_client.delete_file(file)
-                file_logger.info(f'{content_type.capitalize()} removed "{os.path.basename(file)}"\n{os.path.dirname(file).replace(DROPBOX_BASE_TRW_PATH, "").replace("/", ">")} RED\n')
+        if new_files:
+            for file in existing_files:
+                if file not in new_files:
+                    content_type = "video"
+                    if file.endswith(".html"):
+                        content_type = "html"
+                    elif file.endswith(".json"):
+                        content_type = "json"
+                    logging.info("Deleting file from Dropbox - %s", file)
+                    dropbox_client.delete_file(file)
+                    file_logger.info(f'{content_type.capitalize()} removed "{os.path.basename(file)}"\n{os.path.dirname(file).replace(DROPBOX_BASE_TRW_PATH, "").replace("/", ">")} RED\n')
